@@ -425,3 +425,10 @@ Every command that produces structured output supports `--json`. Errors in JSON 
 ```
 
 This makes it straightforward to compose `wt` with other tools, scripts, or agents.
+
+## Future Plans 
+
+Unsure if this will be added, but I'd like to add: 
+- Cloud provider abstractions (AWS, Fly.io, etc.)
+- Automatic download for sandbox dependencies 
+- Better observability, error handling, cleanup, and devex
