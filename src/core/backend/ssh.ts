@@ -61,9 +61,11 @@ export class SshBackend implements Backend {
     if (!result.ok) {
       throw new Error(`Failed to create remote worktree: ${result.stderr}`);
     }
-    // Mirror clones fetch all refs (including refs/pull/*); set push.default so
-    // `git push` only pushes the current branch and doesn't try to push hidden refs.
-    await runSshCommand(this.sshOpts, `git -C ${q(sandboxPath)} config push.default current`);
+    // Mirror clones set remote.origin.mirror=true which forces `git push` to push
+    // all refs (including hidden refs/pull/*). Disable mirror mode and restrict push
+    // to only heads so users don't see "remote rejected" errors on hidden refs.
+    await runSshCommand(this.sshOpts, `git -C ${q(sandboxPath)} config --unset remote.origin.mirror`);
+    await runSshCommand(this.sshOpts, `git -C ${q(sandboxPath)} config remote.origin.push refs/heads/*:refs/heads/*`);
   }
 
   async writeMeta(root: string, id: string, meta: SandboxEntry): Promise<void> {
