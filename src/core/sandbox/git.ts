@@ -55,5 +55,31 @@ export async function getCurrentBranch(): Promise<string | null> {
 
 export function sanitizeBranchName(ref: string): string {
   const name = ref.includes("/") ? ref.split("/").pop()! : ref;
-  return name.replace(/[^a-zA-Z0-9._-]/g, "-").replace(/^-+|-+$/g, "");
+  const sanitized = name.replace(/[^a-zA-Z0-9._-]/g, "-").replace(/^-+|-+$/g, "");
+  // Prevent path traversal via "." or ".." as sandbox names
+  if (!sanitized || sanitized === "." || sanitized === "..") {
+    return "sandbox";
+  }
+  return sanitized;
+}
+
+/**
+ * Strip embedded credentials from a git remote URL.
+ *
+ * HTTPS URLs may contain user:token@ credentials that should not be
+ * persisted to config files or displayed in output.
+ */
+export function stripCredentials(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (parsed.username || parsed.password) {
+      parsed.username = "";
+      parsed.password = "";
+      return parsed.toString();
+    }
+    return url;
+  } catch {
+    // SSH-style URLs (git@host:org/repo) don't have embedded credentials
+    return url;
+  }
 }

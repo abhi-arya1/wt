@@ -2,6 +2,7 @@ import { loadConfig, withConfig } from "@/core/host/config";
 import type { SandboxEntry } from "@/core/host/types";
 import { SandboxError, SandboxErrorCode } from "@/core/sandbox/types";
 import { getBackend, resolveRoot } from "@/core/backend";
+import { validateSandboxName } from "@/core/host/validate";
 
 export async function getSandbox(
   name: string,
@@ -48,6 +49,8 @@ export async function renameSandbox(
   oldName: string,
   newName: string,
 ): Promise<SandboxEntry> {
+  validateSandboxName(newName);
+
   const updated = await withConfig((config) => {
     const entry = config.sandboxes[oldName];
     if (!entry) {

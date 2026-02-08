@@ -2,9 +2,10 @@ import { LOCAL_HOST_NAME } from "@/core/host/config";
 import type { SandboxEntry } from "@/core/host/types";
 import { SandboxError, SandboxErrorCode } from "@/core/sandbox/types";
 import { generateSandboxId, computeRepoId } from "@/core/sandbox/id";
-import { getOriginUrl, getHeadSha, getCurrentBranch } from "@/core/sandbox/git";
+import { getOriginUrl, getHeadSha, getCurrentBranch, stripCredentials } from "@/core/sandbox/git";
 import { getSandbox, putSandbox } from "@/core/sandbox/state";
 import { getBackend, resolveRoot } from "@/core/backend";
+import { validateSandboxName, validateGitRef } from "@/core/host/validate";
 
 export interface CreateSandboxInput {
   name: string;
@@ -21,6 +22,10 @@ export interface CreateSandboxResult {
 export async function createSandbox(
   input: CreateSandboxInput,
 ): Promise<CreateSandboxResult> {
+  validateSandboxName(input.name);
+  if (input.ref) validateGitRef(input.ref);
+  if (input.branch) validateGitRef(input.branch);
+
   const origin = await getOriginUrl();
   const repoId = await computeRepoId(origin);
   const detectedBranch = !input.branch && !input.ref ? await getCurrentBranch() : null;
@@ -56,7 +61,7 @@ export async function createSandbox(
       name: input.name,
       id: sandboxId,
       host: input.hostName,
-      origin,
+      origin: stripCredentials(origin),
       repoId,
       ref,
       path: sandboxPath,

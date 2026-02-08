@@ -18,6 +18,7 @@ export enum SandboxErrorCode {
   PATH_MISSING = "PATH_MISSING",
   GIT_ERROR = "GIT_ERROR",
   EXEC_FAILED = "EXEC_FAILED",
+  VALIDATION_ERROR = "VALIDATION_ERROR",
 }
 
 export class SandboxError extends Error {

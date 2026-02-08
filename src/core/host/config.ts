@@ -79,10 +79,11 @@ export async function saveConfig(config: WtConfig): Promise<void> {
   const configPath = getConfigPath();
   const configDir = configPath.slice(0, configPath.lastIndexOf("/"));
 
-  await Bun.$`mkdir -p ${configDir}`.quiet();
+  await Bun.$`mkdir -p ${configDir} && chmod 700 ${configDir}`.quiet();
 
   const content = JSON.stringify(config, null, 2);
   await Bun.write(configPath, content);
+  await Bun.$`chmod 600 ${configPath}`.quiet();
 }
 
 /**
@@ -100,10 +101,11 @@ export async function withConfig<T>(
 
   // Ensure config dir and file exist before locking (proper-lockfile
   // needs the file to exist for its realpath resolution).
-  await Bun.$`mkdir -p ${configDir}`.quiet();
+  await Bun.$`mkdir -p ${configDir} && chmod 700 ${configDir}`.quiet();
   const file = Bun.file(configPath);
   if (!(await file.exists())) {
     await Bun.write(configPath, JSON.stringify(createEmptyConfig(), null, 2));
+    await Bun.$`chmod 600 ${configPath}`.quiet();
   }
 
   const release = await lockfile.lock(configPath, LOCK_OPTIONS);

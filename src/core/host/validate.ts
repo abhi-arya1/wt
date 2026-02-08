@@ -1,6 +1,11 @@
 import { HostError, HostErrorCode, type HostLabels } from "@/core/host/types";
+import { SandboxError, SandboxErrorCode } from "@/core/sandbox/types";
 
 const HOST_NAME_PATTERN = /^[a-z][a-z0-9_-]{0,31}$/;
+const SANDBOX_NAME_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$/;
+
+/** Characters that are dangerous when interpolated into shell commands. */
+const SHELL_METACHAR_PATTERN = /[;`|&$(){}*?<>!\\"\n\r]/;
 
 export function validateHostName(name: string): void {
   if (!name) {
@@ -17,11 +22,48 @@ export function validateHostName(name: string): void {
   }
 }
 
+export function validateSandboxName(name: string): void {
+  if (!name) {
+    throw new SandboxError(
+      SandboxErrorCode.VALIDATION_ERROR,
+      "Sandbox name is required",
+    );
+  }
+  if (!SANDBOX_NAME_PATTERN.test(name)) {
+    throw new SandboxError(
+      SandboxErrorCode.VALIDATION_ERROR,
+      "Sandbox name must start with an alphanumeric character, contain only alphanumeric characters, dots, underscores, or hyphens, and be at most 64 characters",
+    );
+  }
+  if (name === "." || name === "..") {
+    throw new SandboxError(
+      SandboxErrorCode.VALIDATION_ERROR,
+      'Sandbox name cannot be "." or ".."',
+    );
+  }
+}
+
+export function validateGitRef(ref: string): void {
+  if (!ref) return;
+  if (SHELL_METACHAR_PATTERN.test(ref)) {
+    throw new SandboxError(
+      SandboxErrorCode.VALIDATION_ERROR,
+      `Git ref contains invalid characters: ${ref}`,
+    );
+  }
+}
+
 export function validateSshTarget(ssh: string): void {
   if (!ssh || ssh.trim() === "") {
     throw new HostError(
       HostErrorCode.VALIDATION_ERROR,
       "SSH target is required",
+    );
+  }
+  if (SHELL_METACHAR_PATTERN.test(ssh)) {
+    throw new HostError(
+      HostErrorCode.VALIDATION_ERROR,
+      "SSH target contains invalid characters (shell metacharacters are not allowed)",
     );
   }
 }
@@ -37,6 +79,12 @@ export function validateRootPath(root: string): void {
     throw new HostError(
       HostErrorCode.VALIDATION_ERROR,
       "Root path must be absolute (start with /)",
+    );
+  }
+  if (SHELL_METACHAR_PATTERN.test(root)) {
+    throw new HostError(
+      HostErrorCode.VALIDATION_ERROR,
+      "Root path contains invalid characters (shell metacharacters are not allowed)",
     );
   }
 }

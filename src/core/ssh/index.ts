@@ -1,4 +1,5 @@
 import type { HostConfig } from "@/core/host/types";
+import { q } from "@/core/ssh/quote";
 
 export interface SshOptions {
   ssh: string;
@@ -94,7 +95,7 @@ export async function ensureRemoteDirectories(
   options: SshOptions,
   root: string,
 ): Promise<SshResult> {
-  const dirs = ["mirrors", "sandboxes", "meta"].map((d) => `${root}/${d}`);
+  const dirs = ["mirrors", "sandboxes", "meta"].map((d) => q(`${root}/${d}`));
   const command = `mkdir -p ${dirs.join(" ")}`;
   return runSshCommand(options, command);
 }
@@ -105,8 +106,8 @@ export async function checkRemoteDirectories(
 ): Promise<SshResult> {
   const dirs = ["mirrors", "sandboxes", "meta"];
   const commands = [
-    `mkdir -p ${dirs.map((d) => `${root}/${d}`).join(" ")}`,
-    ...dirs.map((d) => `test -w ${root}/${d}`),
+    `mkdir -p ${dirs.map((d) => q(`${root}/${d}`)).join(" ")}`,
+    ...dirs.map((d) => `test -w ${q(`${root}/${d}`)}`),
   ];
 
   const command = commands.join(" && ");

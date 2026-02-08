@@ -1,6 +1,7 @@
 import type { HostConfig, SandboxEntry } from "@/core/host/types";
 import type { Backend, ExecResult, TmuxSession, CheckItem } from "@/core/backend/types";
 import { runSshCommand, buildSshArgs, hostToSshOptions } from "@/core/ssh";
+import { q } from "@/core/ssh/quote";
 
 function stripBatchMode(args: string[]): string[] {
   const filtered: string[] = [];
@@ -27,7 +28,7 @@ export class SshBackend implements Backend {
 
   async ensureLayout(root: string): Promise<void> {
     const dirs = ["mirrors", "sandboxes", "meta"]
-      .map((d) => `${root}/${d}`)
+      .map((d) => q(`${root}/${d}`))
       .join(" ");
     const result = await runSshCommand(this.sshOpts, `mkdir -p ${dirs}`);
     if (!result.ok) {
@@ -37,25 +38,25 @@ export class SshBackend implements Backend {
 
   async ensureMirror(root: string, repoId: string, origin: string): Promise<string> {
     const mirrorPath = `${root}/mirrors/${repoId}.git`;
-    const check = await runSshCommand(this.sshOpts, `test -f ${mirrorPath}/HEAD`);
+    const check = await runSshCommand(this.sshOpts, `test -f ${q(mirrorPath)}/HEAD`);
     if (!check.ok) {
       const clone = await runSshCommand(
         this.sshOpts,
-        `git clone --bare --mirror ${origin} ${mirrorPath}`,
+        `git clone --bare --mirror ${q(origin)} ${q(mirrorPath)}`,
       );
       if (!clone.ok) {
         throw new Error(`Failed to create remote mirror: ${clone.stderr}`);
       }
     } else {
-      await runSshCommand(this.sshOpts, `git -C ${mirrorPath} fetch --prune origin`);
+      await runSshCommand(this.sshOpts, `git -C ${q(mirrorPath)} fetch --prune origin`);
     }
     return mirrorPath;
   }
 
   async createWorktree(mirrorPath: string, sandboxPath: string, ref: string, branch?: string): Promise<void> {
     const cmd = branch
-      ? `git -C ${mirrorPath} worktree add -B ${branch} ${sandboxPath}`
-      : `git -C ${mirrorPath} worktree add --detach ${sandboxPath} ${ref}`;
+      ? `git -C ${q(mirrorPath)} worktree add -B ${q(branch)} ${q(sandboxPath)}`
+      : `git -C ${q(mirrorPath)} worktree add --detach ${q(sandboxPath)} ${q(ref)}`;
     const result = await runSshCommand(this.sshOpts, cmd);
     if (!result.ok) {
       throw new Error(`Failed to create remote worktree: ${result.stderr}`);
@@ -68,7 +69,7 @@ export class SshBackend implements Backend {
     const escaped = json.replace(/'/g, "'\\''");
     const result = await runSshCommand(
       this.sshOpts,
-      `printf '%s' '${escaped}' > ${metaPath}`,
+      `printf '%s' '${escaped}' > ${q(metaPath)}`,
     );
     if (!result.ok) {
       throw new Error(`Failed to write remote meta: ${result.stderr}`);
@@ -76,19 +77,19 @@ export class SshBackend implements Backend {
   }
 
   async removeSandboxDir(sandboxPath: string): Promise<void> {
-    await runSshCommand(this.sshOpts, `rm -rf ${sandboxPath}`);
+    await runSshCommand(this.sshOpts, `rm -rf ${q(sandboxPath)}`);
   }
 
   async pruneWorktrees(mirrorPath: string): Promise<void> {
-    await runSshCommand(this.sshOpts, `git -C ${mirrorPath} worktree prune`);
+    await runSshCommand(this.sshOpts, `git -C ${q(mirrorPath)} worktree prune`);
   }
 
   async removeMeta(root: string, id: string): Promise<void> {
-    await runSshCommand(this.sshOpts, `rm -f ${root}/meta/${id}.json`);
+    await runSshCommand(this.sshOpts, `rm -f ${q(`${root}/meta/${id}.json`)}`);
   }
 
   async dirExists(path: string): Promise<boolean> {
-    const result = await runSshCommand(this.sshOpts, `test -d ${path}`);
+    const result = await runSshCommand(this.sshOpts, `test -d ${q(path)}`);
     return result.ok;
   }
 
@@ -96,7 +97,7 @@ export class SshBackend implements Backend {
     const cmdStr = command
       .map((c) => `'${c.replace(/'/g, "'\\''")}'`)
       .join(" ");
-    const result = await runSshCommand(this.sshOpts, `cd ${cwd} && ${cmdStr}`);
+    const result = await runSshCommand(this.sshOpts, `cd ${q(cwd)} && ${cmdStr}`);
     return {
       exitCode: result.exitCode,
       stdout: result.stdout,
@@ -109,7 +110,7 @@ export class SshBackend implements Backend {
       .map((c) => `'${c.replace(/'/g, "'\\''")}'`)
       .join(" ");
     const args = stripBatchMode(buildSshArgs(this.sshOpts));
-    const remoteCmd = `cd ${cwd} && ${cmdStr}`;
+    const remoteCmd = `cd ${q(cwd)} && ${cmdStr}`;
     const proc = Bun.spawn(["ssh", "-t", ...args, remoteCmd], {
       stdin: "inherit",
       stdout: "inherit",
@@ -120,7 +121,7 @@ export class SshBackend implements Backend {
 
   async execInteractive(cwd: string, _env?: Record<string, string>): Promise<never> {
     const args = stripBatchMode(buildSshArgs(this.sshOpts));
-    const remoteCmd = `cd ${cwd} && exec $SHELL -l`;
+    const remoteCmd = `cd ${q(cwd)} && exec $SHELL -l`;
     const proc = Bun.spawn(["ssh", "-t", ...args, remoteCmd], {
       stdin: "inherit",
       stdout: "inherit",
@@ -133,7 +134,7 @@ export class SshBackend implements Backend {
 
   async execTmux(cwd: string, sessionName: string): Promise<never> {
     const args = stripBatchMode(buildSshArgs(this.sshOpts));
-    const remoteCmd = `cd ${cwd} && tmux new-session -A -s ${sessionName}`;
+    const remoteCmd = `cd ${q(cwd)} && tmux new-session -A -s ${q(sessionName)}`;
     const proc = Bun.spawn(["ssh", "-t", ...args, remoteCmd], {
       stdin: "inherit",
       stdout: "inherit",
@@ -169,7 +170,6 @@ export class SshBackend implements Backend {
 
     const sshArgs = buildSshArgs(this.sshOpts);
     const target = sshArgs.pop()!;
-    const scpFlags = sshArgs.filter((a) => a !== "-o" || true);
     const scpOpts: string[] = [];
     for (let i = 0; i < sshArgs.length; i++) {
       if (sshArgs[i] === "-p") {

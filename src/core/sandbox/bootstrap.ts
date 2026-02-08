@@ -3,6 +3,10 @@ import type { CheckItem } from "@/core/backend/types";
 import { getBackend, resolveRoot } from "@/core/backend";
 import { SandboxError, SandboxErrorCode } from "@/core/sandbox/types";
 import { runSshCommand, hostToSshOptions } from "@/core/ssh";
+import { q } from "@/core/ssh/quote";
+
+/** Pattern for valid binary/agent names passed to `command -v` on remote hosts. */
+const SAFE_BIN_NAME = /^[a-zA-Z0-9._-]+$/;
 
 export interface BootstrapOptions {
   hostName: string;
@@ -24,7 +28,7 @@ async function detectRemotePackageManager(hostName: string): Promise<string | nu
   const sshOpts = hostToSshOptions(host);
 
   for (const pm of ["apt-get", "apk", "dnf", "yum", "brew"]) {
-    const result = await runSshCommand(sshOpts, `command -v ${pm}`);
+    const result = await runSshCommand(sshOpts, `command -v ${q(pm)}`);
     if (result.ok) return pm;
   }
   return null;
@@ -74,7 +78,7 @@ export async function bootstrapHost(opts: BootstrapOptions): Promise<BootstrapRe
     const sshOpts = hostToSshOptions(host);
 
     for (const bin of ["bash", "curl"]) {
-      const result = await runSshCommand(sshOpts, `command -v ${bin}`);
+      const result = await runSshCommand(sshOpts, `command -v ${q(bin)}`);
       const item: CheckItem = result.ok
         ? { name: bin, ok: true }
         : { name: bin, ok: false, detail: "not found" };
@@ -83,7 +87,13 @@ export async function bootstrapHost(opts: BootstrapOptions): Promise<BootstrapRe
     }
 
     for (const agent of opts.agents) {
-      const result = await runSshCommand(sshOpts, `command -v ${agent}`);
+      if (!SAFE_BIN_NAME.test(agent)) {
+        throw new SandboxError(
+          SandboxErrorCode.VALIDATION_ERROR,
+          `Invalid agent name "${agent}": must contain only alphanumeric characters, dots, underscores, or hyphens`,
+        );
+      }
+      const result = await runSshCommand(sshOpts, `command -v ${q(agent)}`);
       const item: CheckItem = result.ok
         ? { name: agent, ok: true }
         : { name: agent, ok: false, detail: "not found" };
