@@ -1,2 +1,13 @@
-export { registerHelloCommand } from "./hello";
-export { registerGreetCommand } from "./greet";
+export { registerHostCommand } from "@/cli/commands/host";
+export { registerUpCommand } from "@/cli/commands/up";
+export { registerLocalCommand } from "@/cli/commands/local";
+export { registerEnterCommand } from "@/cli/commands/enter";
+export { registerRunCommand } from "@/cli/commands/run";
+export { registerSessionsCommand } from "@/cli/commands/sessions";
+export { registerGcCommand } from "@/cli/commands/gc";
+export { registerDoctorCommand } from "@/cli/commands/doctor";
+export { registerBootstrapCommand } from "@/cli/commands/bootstrap";
+export { registerLsCommand } from "@/cli/commands/ls";
+export { registerRmCommand } from "@/cli/commands/rm";
+export { registerStatusCommand } from "@/cli/commands/status";
+export { registerRenameCommand } from "@/cli/commands/rename";

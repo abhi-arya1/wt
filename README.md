@@ -1,15 +1,361 @@
 # wt
 
-To install dependencies:
+Git worktree sandboxes, locally or on remote hosts over SSH.
+
+`wt` clones your repo into a bare mirror, then spins up isolated worktrees you can enter, run commands in, and throw away when you're done. Works on your machine or any box you can SSH into, with SSH keys, agents, environments, and more included.
+
+```
+wt
+├── host
+│   ├── add [name]
+│   ├── ls
+│   ├── check <name>
+│   └── rm <name>
+├── up [name]
+├── local [name]
+├── rename <old> <new>
+├── enter <name>
+├── run <name> <cmd>
+├── sessions
+├── gc
+├── doctor
+├── bootstrap
+├── ls
+├── rm <name>
+└── status <name>
+```
+
+## Install
 
 ```bash
 bun install
+bun run build:bin
+# puts a standalone binary at ./dist/wt
 ```
 
-To run:
+Or just run it directly during development:
 
 ```bash
-bun run index.ts
+bun run dev -- <command>
 ```
 
-This project was created using `bun init` in bun v1.3.8. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+Cross-compile for other platforms:
+
+```bash
+bun run build:linux        # x64 linux
+bun run build:macos-arm    # apple silicon
+bun run build:macos-x64    # intel mac
+bun run build:windows      # windows x64
+```
+
+## Quick start
+
+### Local sandbox
+
+You're in a git repo. You want an isolated copy to mess around in without touching your working tree.
+
+```bash
+wt local my-experiment
+wt enter my-experiment
+# you're now in a detached worktree at .wt/sandboxes/<id>
+# do whatever, then exit the shell
+
+# or just let it pick the name from your current branch
+wt local
+# sandbox named after your current branch
+```
+
+### Remote sandbox
+
+You have a server you can SSH into. Register it as a host, then spin up sandboxes there.
+
+```bash
+wt host add prod-box --ssh user@10.0.0.5 --root /srv/wt
+wt up my-feature --host prod-box
+wt enter my-feature
+```
+
+### Clean up
+
+```bash
+wt rm my-experiment       # remove a specific sandbox
+wt gc                     # remove all sandboxes older than 7 days
+wt gc --older-than 1d     # more aggressive
+wt gc --dry-run           # see what would get deleted
+```
+
+## Guides
+
+### Setting up a remote host from scratch
+
+1. Make sure the remote box has `git` installed and your SSH key is authorized.
+
+2. Add the host:
+
+```bash
+wt host add myserver --ssh me@myserver.com --root /home/me/wt-sandboxes
+```
+
+This registers the host and runs a connectivity check. If it passes, you're good.
+
+3. Check what's installed on the remote:
+
+```bash
+wt bootstrap --host myserver --tmux --agents claude,opencode
+```
+
+This tells you what's present and what's missing. It doesn't install anything -- just reports.
+
+4. Verify everything works:
+
+```bash
+wt doctor --host myserver
+```
+
+5. Create a sandbox from any local git repo:
+
+```bash
+cd ~/projects/my-app
+wt up test-sandbox --host myserver
+wt enter test-sandbox
+```
+
+You're now in a shell on `myserver` inside a worktree of your repo. `.env` files from your local directory get copied over automatically.
+
+6. Run commands without entering:
+
+```bash
+wt run test-sandbox -- make build
+wt run test-sandbox -- bun test
+```
+
+7. Use tmux for persistent sessions:
+
+```bash
+wt enter test-sandbox --tmux
+# detach with ctrl-b d, reattach later with the same command
+```
+
+### Running multiple sandboxes for parallel work
+
+Say you need to test three branches at once.
+
+```bash
+wt up --branch feature/auth
+wt up --branch feature/payments
+wt up --branch fix/header-bug
+
+wt ls
+# NAME         HOST   REF       CREATED
+# auth         local  a1b2c3d4  2/8/2026
+# payments     local  e5f6g7h8  2/8/2026
+# header-bug   local  i9j0k1l2  2/8/2026
+
+wt run auth -- bun test
+wt run payments -- bun test
+wt run header-bug -- bun test
+
+# rename one if you want
+wt rename auth login-revamp
+
+# done, clean up
+wt rm login-revamp
+wt rm payments
+wt rm header-bug
+```
+
+### Using with tmux sessions
+
+Every sandbox can have a tmux session tied to it. Sessions are named `wt-<sandboxId>`.
+
+```bash
+wt enter my-sandbox --tmux      # creates or reattaches to tmux session
+wt sessions                     # list all wt-managed tmux sessions
+wt sessions --host prod-box     # list sessions on a remote host
+```
+
+## Command reference
+
+### `wt up [name]`
+
+Create a sandbox worktree on a host. If `name` is omitted, it defaults to the branch name from `--branch` / `--ref`, or the current branch.
+
+| Flag | Description |
+|---|---|
+| `-H, --host <name>` | Target host (defaults to configured default, falls back to `local`) |
+| `-b, --branch <ref>` | Git branch, tag, or sha (defaults to HEAD) |
+| `-r, --ref <ref>` | Alias for `--branch` |
+| `--json` | JSON output |
+
+### `wt local [name]`
+
+Shorthand for `wt up [name]` on the local host. Same options minus `--host`.
+
+### `wt rename <old> <new>`
+
+Rename a sandbox.
+
+| Flag | Description |
+|---|---|
+| `--json` | JSON output |
+
+### `wt enter <name>`
+
+Open a shell inside a sandbox.
+
+| Flag | Description |
+|---|---|
+| `--tmux` | Use a tmux session instead of a plain shell |
+| `--json` | Print sandbox record as JSON without entering |
+
+### `wt run <name> <cmd...>`
+
+Run a command inside a sandbox. Streams output by default.
+
+| Flag | Description |
+|---|---|
+| `--json` | Capture stdout/stderr and return as JSON (must come before `--`) |
+| `--quiet` | Suppress non-error output (must come before `--`) |
+
+Note: flags for `wt run` itself go **before** `--`. Everything after `--` is passed to the command.
+
+```bash
+wt run my-sandbox --json -- git log --oneline -5
+```
+
+### `wt ls`
+
+List all sandboxes.
+
+| Flag | Description |
+|---|---|
+| `-H, --host <name>` | Filter by host |
+| `--json` | JSON output |
+
+### `wt rm <name>`
+
+Remove a sandbox. Deletes the worktree directory, metadata, and config entry. Prunes the mirror's worktree references.
+
+| Flag | Description |
+|---|---|
+| `--json` | JSON output |
+
+### `wt status <name>`
+
+Show sandbox details: host, ref, path, age, whether the directory exists, and whether a tmux session is active.
+
+| Flag | Description |
+|---|---|
+| `--json` | JSON output |
+
+### `wt sessions`
+
+List active `wt-*` tmux sessions.
+
+| Flag | Description |
+|---|---|
+| `-H, --host <name>` | Target host |
+| `--json` | JSON output |
+
+### `wt gc`
+
+Garbage-collect stale sandboxes. A sandbox is stale if it's older than the threshold or its directory no longer exists.
+
+| Flag | Description |
+|---|---|
+| `-H, --host <name>` | Target host (omit for all hosts) |
+| `--older-than <dur>` | Age threshold, e.g. `7d`, `24h`, `1w` (default: `7d`) |
+| `--dry-run` | Preview what would be deleted |
+| `--json` | JSON output |
+
+### `wt doctor`
+
+Check that git, bun/node, and tmux are available on a host.
+
+| Flag | Description |
+|---|---|
+| `-H, --host <name>` | Target host |
+| `--json` | JSON output |
+
+### `wt bootstrap`
+
+Check host readiness. Reports what's installed and what's missing. Does not install anything.
+
+| Flag | Description |
+|---|---|
+| `-H, --host <name>` | Target host |
+| `--tmux` | Include tmux in checks |
+| `--agents <list>` | Comma-separated agent CLIs to check (e.g. `claude,opencode`) |
+| `--json` | JSON output |
+
+### `wt host add [name]`
+
+Register or update a remote host.
+
+| Flag | Description |
+|---|---|
+| `-s, --ssh <target>` | SSH target (alias, `user@host`, or `ssh://user@host:port`) |
+| `-r, --root <path>` | Remote base directory (absolute path) |
+| `-d, --default` | Set as default host |
+| `-p, --port <n>` | SSH port |
+| `-i, --identity <path>` | Path to SSH identity file |
+| `-t, --connect-timeout <s>` | Connection timeout in seconds (default: 10) |
+| `-l, --labels <k=v,...>` | Comma-separated key=value labels |
+| `--no-check` | Skip connectivity check |
+| `--json` | JSON output |
+
+### `wt host ls`
+
+List all configured hosts.
+
+| Flag | Description |
+|---|---|
+| `--json` | JSON output |
+
+### `wt host check <name>`
+
+Test SSH connectivity and capabilities of a host.
+
+| Flag | Description |
+|---|---|
+| `--json` | JSON output |
+
+### `wt host rm <name>`
+
+Remove a host.
+
+| Flag | Description |
+|---|---|
+| `-f, --force` | Skip confirmation prompt |
+| `--json` | JSON output |
+
+## How it works
+
+`wt` creates a bare mirror of your repo, then uses `git worktree add` to spin up isolated checkouts. Each sandbox gets its own directory and metadata file.
+
+```
+.wt/                          # local root (inside your repo)
+  mirrors/
+    <repoId>.git/             # bare mirror
+  sandboxes/
+    <sandboxId>/              # worktree checkout
+  meta/
+    <sandboxId>.json          # sandbox metadata
+```
+
+Remote hosts use the same layout under the configured `root` path (e.g. `/srv/wt`). All remote operations go over SSH.
+
+Config lives at `~/.config/wt/config.json` and stores hosts and sandbox records. Every structured command supports `--json` for scripting.
+
+## JSON output
+
+Every command that produces structured output supports `--json`. Errors in JSON mode return:
+
+```json
+{
+  "ok": false,
+  "error": "what went wrong"
+}
+```
+
+This makes it straightforward to compose `wt` with other tools, scripts, or agents.
