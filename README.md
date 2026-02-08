@@ -28,6 +28,20 @@ wt
 ## Install
 
 ```bash
+curl -fsSL https://raw.githubusercontent.com/abhi-arya1/wt/main/install.sh | bash
+```
+
+Or a specific version:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/abhi-arya1/wt/main/install.sh | bash -s 0.0.1
+```
+
+Prebuilt binaries are available for Linux (x64), macOS (Intel & Apple Silicon), and Windows (x64).
+
+### From source
+
+```bash
 bun install
 bun run build:bin
 # puts a standalone binary at ./dist/wt

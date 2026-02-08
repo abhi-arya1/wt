@@ -1,9 +1,11 @@
 import type { Command } from "commander";
 import chalk from "chalk";
+import { confirm } from "@inquirer/prompts";
 import { removeSandboxFull } from "@/core/sandbox/rm";
 import { SandboxError } from "@/core/sandbox/types";
 
 interface RmOptions {
+  yes?: boolean;
   json?: boolean;
 }
 
@@ -12,9 +14,22 @@ export function registerRmCommand(program: Command) {
     .command("rm")
     .description("Remove a sandbox")
     .argument("<name>", "Sandbox name")
+    .option("-y, --yes", "Skip confirmation prompt")
     .option("--json", "Output as JSON")
     .action(async (name: string, options: RmOptions) => {
       try {
+        if (!options.yes && !options.json) {
+          const confirmed = await confirm({
+            message: `Remove sandbox "${name}"?`,
+            default: false,
+          });
+
+          if (!confirmed) {
+            console.log(chalk.dim("Cancelled."));
+            return;
+          }
+        }
+
         const result = await removeSandboxFull(name);
 
         if (options.json) {
