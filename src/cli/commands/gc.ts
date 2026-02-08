@@ -1,6 +1,7 @@
 import type { Command } from "commander";
 import chalk from "chalk";
 import { confirm } from "@inquirer/prompts";
+import { ExitPromptError } from "@inquirer/core";
 import { garbageCollect } from "@/core/sandbox/gc";
 
 interface GcOptions {
@@ -93,6 +94,10 @@ export function registerGcCommand(program: Command) {
           process.exit(1);
         }
       } catch (error) {
+        if (error instanceof ExitPromptError) {
+          console.log(chalk.dim("\nCancelled."));
+          process.exit(130);
+        }
         if (options.json) {
           console.log(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) }, null, 2));
         } else {

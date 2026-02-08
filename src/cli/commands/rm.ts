@@ -1,6 +1,7 @@
 import type { Command } from "commander";
 import chalk from "chalk";
 import { confirm } from "@inquirer/prompts";
+import { ExitPromptError } from "@inquirer/core";
 import { removeSandboxFull } from "@/core/sandbox/rm";
 import { SandboxError } from "@/core/sandbox/types";
 
@@ -46,6 +47,10 @@ export function registerRmCommand(program: Command) {
           console.log(chalk.yellow(`  Warning: could not clean ${warnings.join(", ")}`));
         }
       } catch (error) {
+        if (error instanceof ExitPromptError) {
+          console.log(chalk.dim("\nCancelled."));
+          process.exit(130);
+        }
         if (error instanceof SandboxError) {
           if (options.json) {
             console.log(JSON.stringify({ ok: false, error: error.message }, null, 2));

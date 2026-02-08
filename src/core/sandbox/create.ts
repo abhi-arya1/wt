@@ -10,6 +10,7 @@ export interface CreateSandboxInput {
   name: string;
   hostName: string;
   ref?: string;
+  branch?: string;
 }
 
 export interface CreateSandboxResult {
@@ -22,7 +23,8 @@ export async function createSandbox(
 ): Promise<CreateSandboxResult> {
   const origin = await getOriginUrl();
   const repoId = await computeRepoId(origin);
-  const ref = input.ref ?? (await getHeadSha());
+  const ref = input.branch ?? input.ref ?? (await getHeadSha());
+  const branch = input.branch;
   const backend = await getBackend(input.hostName);
   const root = await resolveRoot(input.hostName);
 
@@ -41,12 +43,12 @@ export async function createSandbox(
   }
 
   const sandboxId = generateSandboxId();
-  const sandboxPath = `${root}/sandboxes/${sandboxId}`;
+  const sandboxPath = `${root}/sandboxes/${input.name}`;
 
   try {
     await backend.ensureLayout(root);
     const mirrorPath = await backend.ensureMirror(root, repoId, origin);
-    await backend.createWorktree(mirrorPath, sandboxPath, ref);
+    await backend.createWorktree(mirrorPath, sandboxPath, ref, branch);
     await backend.copyEnvFiles(process.cwd(), sandboxPath);
 
     const entry: SandboxEntry = {

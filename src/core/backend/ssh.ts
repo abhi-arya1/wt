@@ -52,11 +52,11 @@ export class SshBackend implements Backend {
     return mirrorPath;
   }
 
-  async createWorktree(mirrorPath: string, sandboxPath: string, ref: string): Promise<void> {
-    const result = await runSshCommand(
-      this.sshOpts,
-      `git -C ${mirrorPath} worktree add --detach ${sandboxPath} ${ref}`,
-    );
+  async createWorktree(mirrorPath: string, sandboxPath: string, ref: string, branch?: string): Promise<void> {
+    const cmd = branch
+      ? `git -C ${mirrorPath} worktree add -B ${branch} ${sandboxPath}`
+      : `git -C ${mirrorPath} worktree add --detach ${sandboxPath} ${ref}`;
+    const result = await runSshCommand(this.sshOpts, cmd);
     if (!result.ok) {
       throw new Error(`Failed to create remote worktree: ${result.stderr}`);
     }

@@ -56,13 +56,11 @@ bun run dev -- <command>
 You're in a git repo. You want an isolated copy to mess around in without touching your working tree.
 
 ```bash
-wt local my-experiment
-wt enter my-experiment
-# you're now in a detached worktree at .wt/sandboxes/<id>
-# do whatever, then exit the shell
+wt local my-experiment --enter
+# you're now in a worktree at .wt/sandboxes/my-experiment
 
 # or just let it pick the name from your current branch
-wt local
+wt local --enter
 # sandbox named after your current branch
 ```
 
@@ -72,8 +70,7 @@ You have a server you can SSH into. Register it as a host, then spin up sandboxe
 
 ```bash
 wt host add prod-box --ssh user@10.0.0.5 --root /srv/wt
-wt up my-feature --host prod-box
-wt enter my-feature
+wt up my-feature --host prod-box --enter
 ```
 
 ### Clean up
@@ -117,8 +114,7 @@ wt doctor --host myserver
 
 ```bash
 cd ~/projects/my-app
-wt up test-sandbox --host myserver
-wt enter test-sandbox
+wt up test-sandbox --host myserver --enter
 ```
 
 You're now in a shell on `myserver` inside a worktree of your repo. `.env` files from your local directory get copied over automatically.
@@ -234,18 +230,28 @@ wt sessions --host prod-box     # list sessions on a remote host
 
 ### `wt up [name]`
 
-Create a sandbox worktree on a host. If `name` is omitted, it defaults to the branch name from `--branch` / `--ref`, or the current branch.
+Create a sandbox worktree on a host. If `name` is omitted, it defaults to the branch name from `-b` / `--ref`, or the current branch.
 
 | Flag | Description |
 |---|---|
 | `-H, --host <name>` | Target host (defaults to configured default, falls back to `local`) |
-| `-b, --branch <ref>` | Git branch, tag, or sha (defaults to HEAD) |
-| `-r, --ref <ref>` | Alias for `--branch` |
+| `-b, --branch <name>` | Create or use a branch with this name |
+| `-r, --ref <ref>` | Git ref to check out (branch, tag, or sha that must exist) |
+| `-e, --enter` | Enter the sandbox after creating it |
+| `--tmux` | Use tmux when entering (implies `--enter`) |
 | `--json` | JSON output |
 
 ### `wt local [name]`
 
 Shorthand for `wt up [name]` on the local host. Same options minus `--host`.
+
+| Flag | Description |
+|---|---|
+| `-b, --branch <name>` | Create or use a branch with this name |
+| `-r, --ref <ref>` | Git ref to check out (branch, tag, or sha that must exist) |
+| `-e, --enter` | Enter the sandbox after creating it |
+| `--tmux` | Use tmux when entering (implies `--enter`) |
+| `--json` | JSON output |
 
 ### `wt rename <old> <new>`
 
@@ -382,7 +388,7 @@ Remove a host.
 
 | Flag | Description |
 |---|---|
-| `-f, --force` | Skip confirmation prompt |
+| `-y, --yes` | Skip confirmation prompt |
 | `--json` | JSON output |
 
 ## How it works
@@ -394,7 +400,7 @@ Remove a host.
   mirrors/
     <repoId>.git/             # bare mirror
   sandboxes/
-    <sandboxId>/              # worktree checkout
+    <name>/                   # worktree checkout
   meta/
     <sandboxId>.json          # sandbox metadata
 ```

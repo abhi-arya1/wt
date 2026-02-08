@@ -1,5 +1,6 @@
 import type { SandboxEntry } from "@/core/host/types";
 import type { Backend, ExecResult, TmuxSession, CheckItem } from "@/core/backend/types";
+import { getRepoRoot } from "@/core/sandbox/git";
 
 export class LocalBackend implements Backend {
   async ensureLayout(root: string): Promise<void> {
@@ -19,13 +20,15 @@ export class LocalBackend implements Backend {
     } else {
       await Bun.$`git -C ${mirrorPath} fetch --prune origin`.quiet().nothrow();
     }
+    const localRoot = await getRepoRoot();
+    await Bun.$`git -C ${mirrorPath} fetch ${localRoot} '+refs/heads/*:refs/heads/*'`.quiet().nothrow();
     return mirrorPath;
   }
 
-  async createWorktree(mirrorPath: string, sandboxPath: string, ref: string): Promise<void> {
-    const result = await Bun.$`git -C ${mirrorPath} worktree add --detach ${sandboxPath} ${ref}`
-      .quiet()
-      .nothrow();
+  async createWorktree(mirrorPath: string, sandboxPath: string, ref: string, branch?: string): Promise<void> {
+    const result = branch
+      ? await Bun.$`git -C ${mirrorPath} worktree add -B ${branch} ${sandboxPath}`.quiet().nothrow()
+      : await Bun.$`git -C ${mirrorPath} worktree add --detach ${sandboxPath} ${ref}`.quiet().nothrow();
     if (result.exitCode !== 0) {
       throw new Error(`Failed to create worktree: ${result.stderr.toString().trim()}`);
     }

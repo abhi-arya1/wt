@@ -20,7 +20,7 @@ export interface CheckItem {
 export interface Backend {
   ensureLayout(root: string): Promise<void>;
   ensureMirror(root: string, repoId: string, origin: string): Promise<string>;
-  createWorktree(mirrorPath: string, sandboxPath: string, ref: string): Promise<void>;
+  createWorktree(mirrorPath: string, sandboxPath: string, ref: string, branch?: string): Promise<void>;
   writeMeta(root: string, id: string, meta: SandboxEntry): Promise<void>;
   removeSandboxDir(sandboxPath: string): Promise<void>;
   pruneWorktrees(mirrorPath: string): Promise<void>;

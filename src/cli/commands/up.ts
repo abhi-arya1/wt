@@ -4,12 +4,14 @@ import { LOCAL_HOST_NAME, getHost, getDefaultHost } from "@/core/host/config";
 import { SandboxError } from "@/core/sandbox/types";
 import { isInsideGitRepo, getCurrentBranch, sanitizeBranchName } from "@/core/sandbox/git";
 import { createSandbox } from "@/core/sandbox/create";
-import { buildEnterCommand } from "@/core/sandbox/enter";
+import { enterSandbox, enterSandboxTmux, buildEnterCommand } from "@/core/sandbox/enter";
 
 interface UpOptions {
   host?: string;
   branch?: string;
   ref?: string;
+  enter?: boolean;
+  tmux?: boolean;
   json?: boolean;
 }
 
@@ -17,10 +19,12 @@ export function registerUpCommand(program: Command) {
   program
     .command("up")
     .description("Create a sandbox worktree on a host")
-    .argument("[name]", "Sandbox name (defaults to branch name from --ref or current branch)")
+    .argument("[name]", "Sandbox name (defaults to branch name from -b/--ref or current branch)")
     .option("-H, --host <hostName>", "Target host (defaults to configured default)")
-    .option("-b, --branch <ref>", "Git branch, tag, or sha (defaults to HEAD)")
-    .option("-r, --ref <ref>", "Alias for --branch")
+    .option("-b, --branch <name>", "Create or use a branch with this name")
+    .option("-r, --ref <ref>", "Git ref to check out (branch, tag, or sha that must exist)")
+    .option("-e, --enter", "Enter the sandbox after creating it")
+    .option("--tmux", "Use tmux when entering (implies --enter)")
     .option("--json", "Output result as JSON")
     .action(async (nameArg: string | undefined, options: UpOptions) => {
       try {
@@ -42,13 +46,14 @@ export function registerUpCommand(program: Command) {
           process.exit(1);
         }
 
-        const ref = options.branch ?? options.ref;
+        const ref = options.ref;
+        const branch = options.branch;
 
         let name = nameArg;
         if (!name) {
-          const branch = ref ?? (await getCurrentBranch());
-          if (branch) {
-            name = sanitizeBranchName(branch);
+          const branchOrRef = branch ?? ref ?? (await getCurrentBranch());
+          if (branchOrRef) {
+            name = sanitizeBranchName(branchOrRef);
           } else {
             if (options.json) {
               console.log(JSON.stringify({ ok: false, error: "No name provided and could not determine branch name" }, null, 2));
@@ -82,6 +87,7 @@ export function registerUpCommand(program: Command) {
           name,
           hostName,
           ref,
+          branch,
         });
 
         if (options.json) {
@@ -91,11 +97,27 @@ export function registerUpCommand(program: Command) {
 
         if (result.isIdempotent) {
           console.log(chalk.dim(`Sandbox "${name}" already exists`));
+        } else {
+          console.log(chalk.green(`Created sandbox "${name}"`));
+        }
+
+        if (options.enter || options.tmux) {
+          if (options.tmux) {
+            await enterSandboxTmux(name);
+          } else {
+            await enterSandbox(name);
+          }
+          return;
         }
 
         const host = hostName !== LOCAL_HOST_NAME ? await getHost(hostName) : undefined;
         const cmd = buildEnterCommand(result.entry, host ?? undefined);
-        console.log(cmd);
+
+        if (process.stdout.isTTY) {
+          console.log(`Enter with: ${chalk.cyan(cmd)}`);
+        } else {
+          console.log(cmd);
+        }
       } catch (error) {
         if (error instanceof SandboxError) {
           if (options.json) {
