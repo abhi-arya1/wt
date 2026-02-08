@@ -25,7 +25,14 @@ if [ "$PLATFORM" = "linux" ]; then
 elif [ "$PLATFORM" = "macos" ] && [ "$ARCH_SUFFIX" = "arm" ]; then
   ASSET_NAME="wt-macos-arm"
 elif [ "$PLATFORM" = "macos" ] && [ "$ARCH_SUFFIX" = "x64" ]; then
-  ASSET_NAME="wt-macos-x64"
+  echo "Error: Intel Mac (x86_64) prebuilt binaries are no longer provided."
+  echo "Please build from source instead:"
+  echo ""
+  echo "  git clone https://github.com/abhi-arya1/wt.git && cd wt"
+  echo "  bun install && bun run build:macos-x64"
+  echo "  sudo mv ./dist/wt-macos-x64 /usr/local/bin/wt"
+  echo ""
+  exit 1
 else
   echo "Error: No prebuilt binary for $PLATFORM-$ARCH_SUFFIX"
   exit 1

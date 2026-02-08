@@ -37,7 +37,9 @@ Or a specific version:
 curl -fsSL https://raw.githubusercontent.com/abhi-arya1/wt/main/install.sh | bash -s 0.0.1
 ```
 
-Prebuilt binaries are available for Linux (x64), macOS (Intel & Apple Silicon), and Windows (x64).
+Prebuilt binaries are available for Linux (x64), macOS (Apple Silicon), and Windows (x64).
+
+> **Intel Mac users:** Prebuilt binaries are not provided for Intel Macs. You'll need to [build from source](#from-source) using `bun run build:macos-x64`.
 
 ### From source
 

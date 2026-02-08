@@ -19,9 +19,6 @@ jobs:
           - target: bun-darwin-arm64
             asset: wt-macos-arm
             os: macos-14
-          - target: bun-darwin-x64
-            asset: wt-macos-x64
-            os: macos-13
           - target: bun-windows-x64
             asset: wt-windows.exe
             os: windows-latest
