@@ -31,7 +31,8 @@ export function registerLsCommand(program: Command) {
 
         const nameWidth = Math.max(...result.sandboxes.map((s) => s.name.length), 4);
         const hostWidth = Math.max(...result.sandboxes.map((s) => s.host.length), 4);
-        const refWidth = Math.max(...result.sandboxes.map((s) => s.ref.substring(0, 8).length), 3);
+        const truncateRef = (r: string, max = 20) => r.length > max ? r.substring(0, max - 3) + "..." : r;
+        const refWidth = Math.max(...result.sandboxes.map((s) => truncateRef(s.ref).length), 3);
 
         console.log(
           chalk.bold(
@@ -40,7 +41,7 @@ export function registerLsCommand(program: Command) {
         );
 
         for (const s of result.sandboxes) {
-          const ref = s.ref.substring(0, 8);
+          const ref = truncateRef(s.ref);
           const created = new Date(s.createdAt).toLocaleDateString();
           console.log(
             `${chalk.cyan(s.name.padEnd(nameWidth))}  ${s.host.padEnd(hostWidth)}  ${chalk.yellow(ref.padEnd(refWidth))}  ${chalk.dim(created)}`,
