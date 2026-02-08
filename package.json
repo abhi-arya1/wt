@@ -1,0 +1,32 @@
+{
+  "name": "wt",
+  "version": "1.0.0",
+  "module": "index.ts",
+  "type": "module",
+  "bin": {
+    "wt": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "bun build ./src/index.ts --outdir ./dist --target node",
+    "build:bin": "bun build ./src/index.ts --compile --outfile ./dist/wt",
+    "build:linux": "bun build ./src/index.ts --compile --target=bun-linux-x64 --outfile ./dist/wt-linux",
+    "build:macos-arm": "bun build ./src/index.ts --compile --target=bun-darwin-arm64 --outfile ./dist/wt-macos-arm",
+    "build:macos-x64": "bun build ./src/index.ts --compile --target=bun-darwin-x64 --outfile ./dist/wt-macos-x64",
+    "build:windows": "bun build ./src/index.ts --compile --target=bun-windows-x64 --outfile ./dist/wt-windows.exe",
+    "dev": "bun run ./src/index.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "commander": "^14.0.3"
+  }
+}
