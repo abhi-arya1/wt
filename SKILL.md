@@ -19,13 +19,13 @@ CLI tool that creates isolated git worktree checkouts ("sandboxes") locally or o
 ```
 .wt/                          # Local (inside repo root, gitignored)
   mirrors/<repoId>.git/       # bare --mirror clone
-  sandboxes/<sandboxId>/      # worktree checkout
-  meta/<sandboxId>.json       # metadata
+  sandboxes/<sandboxName>/      # worktree checkout
+  meta/<sandboxName>.json       # metadata
 
 <remote-root>/                # Remote (user-configured)
   mirrors/<repoId>.git/
-  sandboxes/<sandboxId>/
-  meta/<sandboxId>.json
+  sandboxes/<sandboxName>/
+  meta/<sandboxName>.json
 ```
 
 ## Commands

@@ -82,6 +82,10 @@ wt gc --older-than 1d     # more aggressive
 wt gc --dry-run           # see what would get deleted
 ```
 
+### Agent Usage 
+
+If you are using an agent to make sandboxes for multiple agents to work within them, you can install `wt` then give agents the [`SKILL.md`](./SKILL.md) file. This will allow them to understand usage of `wt` and create sandboxes on your behalf.
+
 ## Guides
 
 ### Setting up a remote host from scratch
