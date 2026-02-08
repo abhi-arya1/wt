@@ -75,10 +75,10 @@ export function validateRootPath(root: string): void {
       "Root path is required",
     );
   }
-  if (!root.startsWith("/")) {
+  if (!root.startsWith("/") && !root.startsWith("~/")) {
     throw new HostError(
       HostErrorCode.VALIDATION_ERROR,
-      "Root path must be absolute (start with /)",
+      "Root path must be absolute (start with / or ~/)",
     );
   }
   if (SHELL_METACHAR_PATTERN.test(root)) {

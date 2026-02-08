@@ -75,10 +75,10 @@ async function runInteractiveAdd(): Promise<AddHostInput & { runCheck: boolean }
 
   const root = await input({
     message: "Remote base directory:",
-    default: "/srv/wt",
+    default: "~/.wt",
     validate: (value) => {
       if (!value) return "Root path is required";
-      if (!value.startsWith("/")) return "Must be an absolute path (start with /)";
+      if (!value.startsWith("/") && !value.startsWith("~/")) return "Must be an absolute path (start with / or ~/)";
       return true;
     },
   });
