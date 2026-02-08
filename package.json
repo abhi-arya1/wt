@@ -12,7 +12,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "bun build ./src/index.ts --minify --target node --outdir ./dist --banner '#!/usr/bin/env node' && chmod +x ./dist/index.js",
+    "build": "bun build ./src/index.ts --minify --target bun --outdir ./dist --banner '#!/usr/bin/env bun' && chmod +x ./dist/index.js",
     "dev": "bun run ./src/index.ts"
   },
   "devDependencies": {
