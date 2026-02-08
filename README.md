@@ -221,6 +221,32 @@ wt host add internal-box --ssh internal-box --root /srv/wt
 
 wt will connect through the bastion transparently. The same applies to `ProxyCommand`, custom `ControlMaster` settings, or any other OpenSSH config directives.
 
+### Pushing and creating PRs from a sandbox
+
+Sandboxes are regular git worktrees — standard git commands work as expected. Push branches and create PRs the same way you normally would:
+
+```bash
+wt enter my-sandbox
+
+git checkout -b my-feature
+# make changes
+git add .
+git commit -m "my changes"
+git push -u origin my-feature
+
+# create a PR with the GitHub CLI
+gh pr create --title "My feature" --body "Description of changes"
+```
+
+You can also do this without entering the sandbox:
+
+```bash
+wt run my-sandbox -- git push -u origin my-feature
+wt run my-sandbox -- gh pr create --title "My feature" --body "Description"
+```
+
+**Note:** Because `wt` uses `git clone --bare --mirror`, the mirror fetches all remote refs including GitHub's internal PR refs (`refs/pull/*/head`). A plain `git push` with no arguments may try to push these back and produce harmless `remote rejected` errors. To avoid this, push specific branches explicitly (`git push origin my-branch`) or set `git config --global push.default current`.
+
 ### Using with tmux sessions
 
 Every sandbox can have a tmux session tied to it. Sessions are named `wt-<sandboxId>`.

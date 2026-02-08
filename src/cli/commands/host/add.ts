@@ -155,7 +155,6 @@ export function registerHostAddCommand(parent: Command) {
         if (options.json) {
           console.log(JSON.stringify(result, null, 2));
         } else {
-          // Human output
           if (result.checkResult) {
             console.log(formatCheckResult(result.checkResult));
             console.log();

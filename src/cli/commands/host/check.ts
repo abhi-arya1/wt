@@ -54,7 +54,6 @@ export function registerHostCheckCommand(parent: Command) {
     .option("--json", "Output result as JSON")
     .action(async (name: string, options: CheckOptions) => {
       try {
-        // Get host info for display
         const host = await getHost(name);
         if (!host) {
           if (options.json) {

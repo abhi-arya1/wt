@@ -54,8 +54,11 @@ export async function getCurrentBranch(): Promise<string | null> {
 }
 
 export function sanitizeBranchName(ref: string): string {
-  const name = ref.includes("/") ? ref.split("/").pop()! : ref;
-  const sanitized = name.replace(/[^a-zA-Z0-9._-]/g, "-").replace(/^-+|-+$/g, "");
+  const sanitized = ref
+    .replace(/\/+/g, "-")
+    .replace(/[^a-zA-Z0-9._-]/g, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/^-+|-+$/g, "");
   // Prevent path traversal via "." or ".." as sandbox names
   if (!sanitized || sanitized === "." || sanitized === "..") {
     return "sandbox";
