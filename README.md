@@ -1,6 +1,6 @@
 # wt
 
-Git worktree sandboxes, locally or on remote hosts over SSH.
+Run `git worktree` sandboxes, locally or on remote hosts over SSH, with minimal setup.
 
 `wt` clones your repo into a bare mirror, then spins up isolated worktrees you can enter, run commands in, and throw away when you're done. Works on your machine or any box you can SSH into, with SSH keys, agents, environments, and more included.
 
