@@ -18,9 +18,9 @@ import {
 
 const program = new Command();
 
-const VERSION = "0.0.2";
+const VERSION = "0.0.1";
 
-function buildTree(cmd: Command, prefix = "", isRoot = true): string[] {
+function buildTree(cmd: Command, prefix = ""): string[] {
   const lines: string[] = [];
   const name = cmd.name();
   const args = cmd.registeredArguments

@@ -4,7 +4,7 @@ import {
   HostError,
   HostErrorCode,
 } from "@/core/host/types";
-import { loadConfig, saveConfig } from "@/core/host/config";
+import { loadConfig, withConfig } from "@/core/host/config";
 import {
   testSshConnection,
   checkRemoteDirectories,
@@ -138,21 +138,20 @@ export async function updateHostCheckStatus(
   name: string,
   result: CheckHostResult,
 ): Promise<void> {
-  const config = await loadConfig();
-  const host = config.hosts[name];
+  await withConfig((config) => {
+    const host = config.hosts[name];
 
-  if (!host) {
-    throw new HostError(
-      HostErrorCode.HOST_NOT_FOUND,
-      `Host "${name}" not found`,
-    );
-  }
+    if (!host) {
+      throw new HostError(
+        HostErrorCode.HOST_NOT_FOUND,
+        `Host "${name}" not found`,
+      );
+    }
 
-  host.lastCheckedAt = new Date().toISOString();
-  host.lastStatus = result.ok ? "ok" : "error";
-  host.updatedAt = new Date().toISOString();
-
-  await saveConfig(config);
+    host.lastCheckedAt = new Date().toISOString();
+    host.lastStatus = result.ok ? "ok" : "error";
+    host.updatedAt = new Date().toISOString();
+  });
 }
 
 export async function checkAndUpdateHost(

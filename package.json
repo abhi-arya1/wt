@@ -1,28 +1,24 @@
 {
-  "name": "wt",
+  "name": "@abhi-arya1/wt",
   "version": "0.0.1",
+  "description": "Git worktree sandboxes, locally or on remote hosts over SSH.",
   "module": "index.ts",
   "type": "module",
   "bin": {
     "wt": "./dist/index.js"
   },
   "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "bun build ./src/index.ts --outdir ./dist --target node",
-    "build:bin": "bun build ./src/index.ts --compile --outfile ./dist/wt",
-    "build:linux": "bun build ./src/index.ts --compile --target=bun-linux-x64 --outfile ./dist/wt-linux",
-    "build:macos-arm": "bun build ./src/index.ts --compile --target=bun-darwin-arm64 --outfile ./dist/wt-macos-arm",
-    "build:macos-x64": "bun build ./src/index.ts --compile --target=bun-darwin-x64 --outfile ./dist/wt-macos-x64",
-    "build:windows": "bun build ./src/index.ts --compile --target=bun-windows-x64 --outfile ./dist/wt-windows.exe",
+    "build": "bun build ./src/index.ts --minify --target node --outdir ./dist --banner '#!/usr/bin/env node' && chmod +x ./dist/index.js",
     "dev": "bun run ./src/index.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/ms": "^2.1.0"
+    "@types/ms": "^2.1.0",
+    "@types/proper-lockfile": "^4.1.4"
   },
   "peerDependencies": {
     "typescript": "^5"
@@ -32,6 +28,7 @@
     "chalk": "^5.6.2",
     "commander": "^14.0.3",
     "ms": "^2.1.3",
-    "nanoid": "^5.1.6"
+    "nanoid": "^5.1.6",
+    "proper-lockfile": "^4.1.2"
   }
 }

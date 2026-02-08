@@ -28,40 +28,28 @@ wt
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/abhi-arya1/wt/main/install.sh | bash
+# with any package manager
+npm install -g @abhi-arya1/wt
+pnpm add -g @abhi-arya1/wt
+yarn global add @abhi-arya1/wt
+bun install -g @abhi-arya1/wt
 ```
 
-Or a specific version:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/abhi-arya1/wt/main/install.sh | bash -s 0.0.1
-```
-
-Prebuilt binaries are available for Linux (x64), macOS (Apple Silicon), and Windows (x64).
-
-> **Intel Mac users:** Prebuilt binaries are not provided for Intel Macs. You'll need to [build from source](#from-source) using `bun run build:macos-x64`.
+Requires [Node.js](https://nodejs.org) (v18+). You can also build a standalone binary with `bun build --compile` if you prefer — no runtime needed, but the binary will be larger.
 
 ### From source
 
 ```bash
+git clone https://github.com/abhi-arya1/wt.git && cd wt
 bun install
-bun run build:bin
-# puts a standalone binary at ./dist/wt
+bun run build
+bun link
 ```
 
 Or just run it directly during development:
 
 ```bash
 bun run dev -- <command>
-```
-
-Cross-compile for other platforms:
-
-```bash
-bun run build:linux        # x64 linux
-bun run build:macos-arm    # apple silicon
-bun run build:macos-x64    # intel mac
-bun run build:windows      # windows x64
 ```
 
 ## Quick start
@@ -179,6 +167,61 @@ wt rm login-revamp
 wt rm payments
 wt rm header-bug
 ```
+
+### SSH keys and identity files
+
+Use `-i` to point at a specific key when adding a host, and `-p` for a non-standard port:
+
+```bash
+wt host add mybox --ssh deploy@10.0.0.5 --root /srv/wt -i ~/.ssh/id_mybox -p 2222
+```
+
+These are stored in config and used for every SSH and SCP operation to that host. If you don't pass `-i`, wt uses whatever OpenSSH picks from your agent or default key.
+
+### Private repos on remote hosts
+
+When you run `wt up --host myserver`, wt tells the **remote** to `git clone --bare --mirror <origin>`. That means the remote host needs access to your git remote (e.g. GitHub). For private repos, you have two options:
+
+**Option 1: SSH agent forwarding (recommended)**
+
+Add `ForwardAgent yes` for the host in your `~/.ssh/config`:
+
+```
+Host myserver
+    HostName 10.0.0.5
+    User deploy
+    ForwardAgent yes
+```
+
+Now your local SSH keys are available on the remote when wt runs git commands. No keys need to be deployed on the server.
+
+**Option 2: Deploy a key on the remote**
+
+Add an SSH key on the remote host and register it as a deploy key with your git provider (e.g. GitHub deploy keys). This works without agent forwarding but means the remote has standing access to the repo.
+
+### Hosts behind firewalls and jump hosts
+
+wt doesn't have explicit jump host flags, but it passes the SSH target directly to OpenSSH, so anything in your `~/.ssh/config` is honored. To reach a host behind a bastion:
+
+```
+Host bastion
+    HostName bastion.example.com
+    User ops
+
+Host internal-box
+    HostName 10.0.1.50
+    User deploy
+    ProxyJump bastion
+    ForwardAgent yes
+```
+
+Then register it using the alias:
+
+```bash
+wt host add internal-box --ssh internal-box --root /srv/wt
+```
+
+wt will connect through the bastion transparently. The same applies to `ProxyCommand`, custom `ControlMaster` settings, or any other OpenSSH config directives.
 
 ### Using with tmux sessions
 

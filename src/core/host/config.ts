@@ -1,6 +1,17 @@
 import type { WtConfig, HostConfig, SandboxEntry } from "@/core/host/types";
+import lockfile from "proper-lockfile";
 
 export const LOCAL_HOST_NAME = "local";
+
+const LOCK_OPTIONS = {
+  stale: 5000,
+  retries: {
+    retries: 5,
+    minTimeout: 100,
+    maxTimeout: 1000,
+    factor: 2,
+  },
+} as const;
 
 export function getConfigPath(): string {
   const home = Bun.env.HOME || Bun.env.USERPROFILE || "~";
@@ -74,6 +85,38 @@ export async function saveConfig(config: WtConfig): Promise<void> {
   await Bun.write(configPath, content);
 }
 
+/**
+ * Atomically read-modify-write the config file under a lockfile.
+ *
+ * Acquires an exclusive lock on the config file, loads a fresh copy,
+ * passes it to `fn` for mutation, saves the result, then releases.
+ * Read-only callers should use `loadConfig()` directly (no lock needed).
+ */
+export async function withConfig<T>(
+  fn: (config: WtConfig) => T | Promise<T>,
+): Promise<T> {
+  const configPath = getConfigPath();
+  const configDir = configPath.slice(0, configPath.lastIndexOf("/"));
+
+  // Ensure config dir and file exist before locking (proper-lockfile
+  // needs the file to exist for its realpath resolution).
+  await Bun.$`mkdir -p ${configDir}`.quiet();
+  const file = Bun.file(configPath);
+  if (!(await file.exists())) {
+    await Bun.write(configPath, JSON.stringify(createEmptyConfig(), null, 2));
+  }
+
+  const release = await lockfile.lock(configPath, LOCK_OPTIONS);
+  try {
+    const config = await loadConfig();
+    const result = await fn(config);
+    await saveConfig(config);
+    return result;
+  } finally {
+    await release();
+  }
+}
+
 export async function getHost(name: string): Promise<HostConfig | undefined> {
   const config = await loadConfig();
   return config.hosts[name];
@@ -88,29 +131,29 @@ export async function getDefaultHost(): Promise<HostConfig | undefined> {
 }
 
 export async function updateHost(host: HostConfig): Promise<void> {
-  const config = await loadConfig();
-  config.hosts[host.name] = host;
-  await saveConfig(config);
+  await withConfig((config) => {
+    config.hosts[host.name] = host;
+  });
 }
 
 export async function setDefaultHost(name: string | null): Promise<void> {
-  const config = await loadConfig();
-  if (name !== null && !config.hosts[name]) {
-    throw new Error(`Host "${name}" not found`);
-  }
-  config.defaultHost = name;
-  await saveConfig(config);
+  await withConfig((config) => {
+    if (name !== null && !config.hosts[name]) {
+      throw new Error(`Host "${name}" not found`);
+    }
+    config.defaultHost = name;
+  });
 }
 
 export async function removeHost(name: string): Promise<boolean> {
-  const config = await loadConfig();
-  if (!config.hosts[name]) {
-    return false;
-  }
-  delete config.hosts[name];
-  if (config.defaultHost === name) {
-    config.defaultHost = null;
-  }
-  await saveConfig(config);
-  return true;
+  return withConfig((config) => {
+    if (!config.hosts[name]) {
+      return false;
+    }
+    delete config.hosts[name];
+    if (config.defaultHost === name) {
+      config.defaultHost = null;
+    }
+    return true;
+  });
 }

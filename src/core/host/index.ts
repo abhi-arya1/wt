@@ -18,6 +18,7 @@ export {
   getConfigPath,
   loadConfig,
   saveConfig,
+  withConfig,
   getHost,
   getDefaultHost,
   updateHost,

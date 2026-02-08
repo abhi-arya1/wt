@@ -1,4 +1,4 @@
-import { loadConfig, saveConfig } from "@/core/host/config";
+import { loadConfig, withConfig } from "@/core/host/config";
 import type { SandboxEntry } from "@/core/host/types";
 import { SandboxError, SandboxErrorCode } from "@/core/sandbox/types";
 import { getBackend, resolveRoot } from "@/core/backend";
@@ -11,19 +11,19 @@ export async function getSandbox(
 }
 
 export async function putSandbox(entry: SandboxEntry): Promise<void> {
-  const config = await loadConfig();
-  config.sandboxes[entry.name] = entry;
-  await saveConfig(config);
+  await withConfig((config) => {
+    config.sandboxes[entry.name] = entry;
+  });
 }
 
 export async function removeSandbox(name: string): Promise<boolean> {
-  const config = await loadConfig();
-  if (!config.sandboxes[name]) {
-    return false;
-  }
-  delete config.sandboxes[name];
-  await saveConfig(config);
-  return true;
+  return withConfig((config) => {
+    if (!config.sandboxes[name]) {
+      return false;
+    }
+    delete config.sandboxes[name];
+    return true;
+  });
 }
 
 export async function listSandboxes(): Promise<SandboxEntry[]> {
@@ -48,30 +48,31 @@ export async function renameSandbox(
   oldName: string,
   newName: string,
 ): Promise<SandboxEntry> {
-  const config = await loadConfig();
-  const entry = config.sandboxes[oldName];
-  if (!entry) {
-    throw new SandboxError(
-      SandboxErrorCode.SANDBOX_NOT_FOUND,
-      `Sandbox "${oldName}" not found`,
-    );
-  }
-  if (config.sandboxes[newName]) {
-    throw new SandboxError(
-      SandboxErrorCode.SANDBOX_EXISTS,
-      `Sandbox "${newName}" already exists`,
-    );
-  }
+  const updated = await withConfig((config) => {
+    const entry = config.sandboxes[oldName];
+    if (!entry) {
+      throw new SandboxError(
+        SandboxErrorCode.SANDBOX_NOT_FOUND,
+        `Sandbox "${oldName}" not found`,
+      );
+    }
+    if (config.sandboxes[newName]) {
+      throw new SandboxError(
+        SandboxErrorCode.SANDBOX_EXISTS,
+        `Sandbox "${newName}" already exists`,
+      );
+    }
 
-  const updated: SandboxEntry = { ...entry, name: newName };
-  delete config.sandboxes[oldName];
-  config.sandboxes[newName] = updated;
-  await saveConfig(config);
+    const updated: SandboxEntry = { ...entry, name: newName };
+    delete config.sandboxes[oldName];
+    config.sandboxes[newName] = updated;
+    return updated;
+  });
 
   try {
-    const backend = await getBackend(entry.host);
-    const root = await resolveRoot(entry.host);
-    await backend.writeMeta(root, entry.id, updated);
+    const backend = await getBackend(updated.host);
+    const root = await resolveRoot(updated.host);
+    await backend.writeMeta(root, updated.id, updated);
   } catch {}
 
   return updated;

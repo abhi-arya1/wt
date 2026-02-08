@@ -1,5 +1,5 @@
 import ms, { type StringValue } from "ms";
-import { loadConfig, saveConfig, LOCAL_HOST_NAME } from "@/core/host/config";
+import { loadConfig, withConfig, LOCAL_HOST_NAME } from "@/core/host/config";
 import type { SandboxEntry } from "@/core/host/types";
 import { getBackend, resolveRoot } from "@/core/backend";
 
@@ -21,6 +21,7 @@ export async function garbageCollect(opts: GcOptions): Promise<GcResult> {
     throw new Error(`Invalid duration: ${opts.olderThan}`);
   }
 
+  // Read-only snapshot to determine which sandboxes are stale.
   const config = await loadConfig();
   const now = Date.now();
   const cutoff = now - threshold;
@@ -70,7 +71,6 @@ export async function garbageCollect(opts: GcOptions): Promise<GcResult> {
       await backend.removeMeta(root, entry.id);
       mirrorsToPrune.add(`${entry.host}:${root}/mirrors/${entry.repoId}.git`);
 
-      delete config.sandboxes[entry.name];
       deleted.push(entry);
     } catch (err) {
       errors.push({
@@ -80,8 +80,13 @@ export async function garbageCollect(opts: GcOptions): Promise<GcResult> {
     }
   }
 
+  // Atomic config update: remove all successfully deleted sandboxes at once.
   if (!opts.dryRun && deleted.length > 0) {
-    await saveConfig(config);
+    await withConfig((config) => {
+      for (const entry of deleted) {
+        delete config.sandboxes[entry.name];
+      }
+    });
   }
 
   if (!opts.dryRun) {
