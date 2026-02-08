@@ -28,14 +28,11 @@ wt
 ## Install
 
 ```bash
-# with any package manager
-npm install -g @abhi-arya1/wt
-pnpm add -g @abhi-arya1/wt
-yarn global add @abhi-arya1/wt
+# with any package manager, but bun is recommended
 bun install -g @abhi-arya1/wt
 ```
 
-Requires [Node.js](https://nodejs.org) (v18+). You can also build a standalone binary with `bun build --compile` if you prefer — no runtime needed, but the binary will be larger.
+Requires [Bun](https://bun.sh) (v1.3.3+). You can also build a standalone binary with `bun build --compile` if you prefer — no runtime needed, but the binary will be larger.
 
 ### From source
 
