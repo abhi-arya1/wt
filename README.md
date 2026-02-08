@@ -58,6 +58,7 @@ You're in a git repo. You want an isolated copy to mess around in without touchi
 ```bash
 wt local my-experiment --enter
 # you're now in a worktree at .wt/sandboxes/my-experiment
+# type `exit` to leave the sandbox shell
 
 # or just let it pick the name from your current branch
 wt local --enter
@@ -234,7 +235,7 @@ wt sessions --host prod-box     # list sessions on a remote host
 
 ### `wt up [name]`
 
-Create a sandbox worktree on a host. If `name` is omitted, it defaults to the branch name from `-b` / `--ref`, or the current branch.
+Create a sandbox worktree on a host. If `name` is omitted, it defaults to the branch name from `-b` / `--ref`, or the current branch. When `-b` is not provided, the sandbox stays on the same branch you're currently on.
 
 | Flag | Description |
 |---|---|

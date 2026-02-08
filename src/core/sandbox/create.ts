@@ -2,7 +2,7 @@ import { LOCAL_HOST_NAME } from "@/core/host/config";
 import type { SandboxEntry } from "@/core/host/types";
 import { SandboxError, SandboxErrorCode } from "@/core/sandbox/types";
 import { generateSandboxId, computeRepoId } from "@/core/sandbox/id";
-import { getOriginUrl, getHeadSha } from "@/core/sandbox/git";
+import { getOriginUrl, getHeadSha, getCurrentBranch } from "@/core/sandbox/git";
 import { getSandbox, putSandbox } from "@/core/sandbox/state";
 import { getBackend, resolveRoot } from "@/core/backend";
 
@@ -23,8 +23,9 @@ export async function createSandbox(
 ): Promise<CreateSandboxResult> {
   const origin = await getOriginUrl();
   const repoId = await computeRepoId(origin);
-  const ref = input.branch ?? input.ref ?? (await getHeadSha());
-  const branch = input.branch;
+  const detectedBranch = !input.branch && !input.ref ? await getCurrentBranch() : null;
+  const branch = input.branch ?? detectedBranch ?? undefined;
+  const ref = branch ?? input.ref ?? (await getHeadSha());
   const backend = await getBackend(input.hostName);
   const root = await resolveRoot(input.hostName);
 
