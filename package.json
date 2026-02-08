@@ -1,6 +1,6 @@
 {
   "name": "@abhi-arya1/wt",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Git worktree sandboxes, locally or on remote hosts over SSH.",
   "module": "index.ts",
   "type": "module",
