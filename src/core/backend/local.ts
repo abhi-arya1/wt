@@ -32,6 +32,9 @@ export class LocalBackend implements Backend {
     if (result.exitCode !== 0) {
       throw new Error(`Failed to create worktree: ${result.stderr.toString().trim()}`);
     }
+    // Mirror clones fetch all refs (including refs/pull/*); set push.default so
+    // `git push` only pushes the current branch and doesn't try to push hidden refs.
+    await Bun.$`git -C ${sandboxPath} config push.default current`.quiet().nothrow();
   }
 
   async writeMeta(root: string, id: string, meta: SandboxEntry): Promise<void> {
