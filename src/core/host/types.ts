@@ -2,6 +2,11 @@ export type HostLabels = Record<string, string>;
 
 export type HostStatus = "ok" | "error" | "unchecked";
 
+export interface PortMapping {
+  localPort: number;
+  hostPort: number;
+}
+
 export interface HostConfig {
   name: string;
   ssh: string;
@@ -10,6 +15,7 @@ export interface HostConfig {
   identity?: string;
   connectTimeout: number;
   labels: HostLabels;
+  portMappings?: PortMapping[];
   createdAt: string;
   updatedAt: string;
   lastCheckedAt: string | null;

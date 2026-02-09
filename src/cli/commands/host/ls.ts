@@ -17,6 +17,13 @@ function formatStatus(status: string): string {
   }
 }
 
+function formatPortMappings(host: HostConfig): string {
+  if (!host.portMappings || host.portMappings.length === 0) {
+    return chalk.dim("-");
+  }
+  return host.portMappings.map((m) => `${m.localPort}:${m.hostPort}`).join(", ");
+}
+
 function pad(str: string, width: number): string {
   return str.padEnd(width);
 }
@@ -42,12 +49,14 @@ export function registerHostLsCommand(parent: Command) {
       const nameWidth = Math.max(4, ...result.hosts.map((h) => h.name.length)) + 2;
       const sshWidth = Math.max(3, ...result.hosts.map((h) => h.ssh.length)) + 2;
       const rootWidth = Math.max(4, ...result.hosts.map((h) => h.root.length)) + 2;
+      const portsWidth = Math.max(5, ...result.hosts.map((h) => formatPortMappings(h).length)) + 2;
 
       console.log(
         chalk.bold(
           pad("NAME", nameWidth) +
             pad("SSH", sshWidth) +
             pad("ROOT", rootWidth) +
+            pad("PORTS", portsWidth) +
             pad("DEFAULT", 9) +
             "STATUS",
         ),
@@ -61,6 +70,7 @@ export function registerHostLsCommand(parent: Command) {
           pad(host.name, nameWidth) +
             pad(host.ssh, sshWidth) +
             pad(host.root, rootWidth) +
+            pad(formatPortMappings(host), portsWidth) +
             pad(defaultMark, 9) +
             formatStatus(host.lastStatus),
         );

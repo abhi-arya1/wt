@@ -10,7 +10,9 @@ wt
 │   ├── add [name]
 │   ├── ls
 │   ├── check <name>
-│   └── rm <name>
+│   ├── rm <name>
+│   ├── map <name> <localPort> <hostPort>
+│   └── unmap <name> <localPort>
 ├── up [name]
 ├── local [name]
 ├── rename <old> <new>
@@ -421,6 +423,37 @@ Remove a host.
 |---|---|
 | `-y, --yes` | Skip confirmation prompt |
 | `--json` | JSON output |
+
+### `wt host map <name> <localPort> <hostPort>`
+
+Add a port mapping to a host. When you SSH into the host (via `wt enter`, `wt up --enter`, etc.), the mapping is applied as `-L localPort:localhost:hostPort`, forwarding traffic from your local port to the remote port.
+
+| Flag | Description |
+|---|---|
+| `--json` | JSON output |
+
+```bash
+# Forward local port 3000 to remote port 8080
+wt host map myserver 3000 8080
+
+# Now when you enter a sandbox, localhost:3000 reaches the remote's port 8080
+wt enter my-sandbox
+curl localhost:3000  # hits remote:8080
+```
+
+Mappings are stored in config and persist across restarts. If a mapping for the same local port already exists, it is updated.
+
+### `wt host unmap <name> <localPort>`
+
+Remove a port mapping from a host.
+
+| Flag | Description |
+|---|---|
+| `--json` | JSON output |
+
+```bash
+wt host unmap myserver 3000
+```
 
 ## How it works
 

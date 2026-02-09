@@ -2,6 +2,7 @@ export type {
   HostConfig,
   HostLabels,
   HostStatus,
+  PortMapping,
   AddHostInput,
   AddHostResult,
   CheckHostResult,

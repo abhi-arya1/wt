@@ -1,4 +1,4 @@
-import type { HostConfig } from "@/core/host/types";
+import type { HostConfig, PortMapping } from "@/core/host/types";
 import { q } from "@/core/ssh/quote";
 
 export interface SshOptions {
@@ -6,6 +6,7 @@ export interface SshOptions {
   port?: number;
   identity?: string;
   connectTimeout?: number;
+  portMappings?: PortMapping[];
 }
 
 export function buildSshArgs(options: SshOptions): string[] {
@@ -27,6 +28,12 @@ export function buildSshArgs(options: SshOptions): string[] {
     args.push("-i", options.identity);
   }
 
+  if (options.portMappings) {
+    for (const mapping of options.portMappings) {
+      args.push("-L", `${mapping.localPort}:localhost:${mapping.hostPort}`);
+    }
+  }
+
   args.push(options.ssh);
 
   return args;
@@ -38,6 +45,7 @@ export function hostToSshOptions(host: HostConfig): SshOptions {
     port: host.port,
     identity: host.identity,
     connectTimeout: host.connectTimeout,
+    portMappings: host.portMappings,
   };
 }
 

@@ -45,9 +45,11 @@ CLI tool that creates isolated git worktree checkouts ("sandboxes") locally or o
 | `wt doctor` | Check prerequisites (git, bun/node, tmux) on a host. |
 | `wt bootstrap` | Report host readiness + install hints (read-only, installs nothing). |
 | `wt host add [name]` | Register remote host. Interactive mode if args omitted. |
-| `wt host ls` | List configured hosts. |
+| `wt host ls` | List configured hosts (includes port mappings). |
 | `wt host check <name>` | Test SSH connectivity. |
 | `wt host rm <name>` | Remove host config. |
+| `wt host map <name> <localPort> <hostPort>` | Add port forwarding (`-L`) to a host. |
+| `wt host unmap <name> <localPort>` | Remove a port mapping. |
 
 ## Common Workflows
 
@@ -66,6 +68,14 @@ wt doctor -H prod
 wt up my-feature -H prod --branch feature/auth
 wt enter my-feature --tmux
 wt run my-feature -- make build
+```
+
+**Port forwarding:**
+```bash
+wt host map prod 3000 8080      # local:3000 -> remote:8080
+wt host map prod 5432 5432      # forward postgres
+wt enter my-feature             # mappings applied automatically
+wt host unmap prod 3000         # remove mapping
 ```
 
 **Parallel branch testing:**
