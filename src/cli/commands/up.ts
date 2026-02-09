@@ -1,5 +1,6 @@
 import type { Command } from "commander";
 import chalk from "chalk";
+import { createSpinner } from "nanospinner";
 import { LOCAL_HOST_NAME, getHost, getDefaultHost } from "@/core/host/config";
 import { SandboxError } from "@/core/sandbox/types";
 import { isInsideGitRepo, getCurrentBranch, sanitizeBranchName } from "@/core/sandbox/git";
@@ -27,6 +28,8 @@ export function registerUpCommand(program: Command) {
     .option("--tmux", "Use tmux when entering (implies --enter)")
     .option("--json", "Output result as JSON")
     .action(async (nameArg: string | undefined, options: UpOptions) => {
+      let spinner: ReturnType<typeof createSpinner> | null = null;
+
       try {
         if (!(await isInsideGitRepo())) {
           if (options.json) {
@@ -83,6 +86,10 @@ export function registerUpCommand(program: Command) {
           hostName = defaultHost?.name ?? LOCAL_HOST_NAME;
         }
 
+        if (!options.json) {
+          spinner = createSpinner(`Creating sandbox "${name}"...`).start();
+        }
+
         const result = await createSandbox({
           name,
           hostName,
@@ -96,9 +103,9 @@ export function registerUpCommand(program: Command) {
         }
 
         if (result.isIdempotent) {
-          console.log(chalk.dim(`Sandbox "${name}" already exists`));
+          spinner?.success({ text: chalk.dim(`Sandbox "${name}" already exists`) });
         } else {
-          console.log(chalk.green(`Created sandbox "${name}"`));
+          spinner?.success({ text: chalk.green(`Created sandbox "${name}"`) });
         }
 
         if (options.enter || options.tmux) {
@@ -122,6 +129,8 @@ export function registerUpCommand(program: Command) {
         if (error instanceof SandboxError) {
           if (options.json) {
             console.log(JSON.stringify({ ok: false, error: error.message }, null, 2));
+          } else if (spinner) {
+            spinner.error({ text: chalk.red(`Error: ${error.message}`) });
           } else {
             console.error(chalk.red(`Error: ${error.message}`));
           }
