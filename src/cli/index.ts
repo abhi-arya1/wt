@@ -18,7 +18,7 @@ import {
 
 const program = new Command();
 
-const VERSION = "0.0.8";
+const VERSION = "0.0.9";
 
 function buildTree(cmd: Command, prefix = ""): string[] {
   const lines: string[] = [];
